@@ -123,13 +123,12 @@ class MuseGAN():
 
     def _build_critic(self):
 
-        critic_input = Input(shape=self.input_dim, name='critic_input') # 4, 96, 84, 8
+        critic_input = Input(shape=self.input_dim, name='critic_input') # 4, 96, 84, 1
 
         x = critic_input
 
         x = self.conv(x, f=128, k=(2, 1, 1), s=(1, 1, 1), a='lrelu', p='valid') #(3, 96, 84, 128)
         x = self.conv(x, f=128, k=(self.n_bars - 1, 1, 1), s=(1, 1, 1), a='lrelu', p='valid') #(1, 96, 84 128)
-
         x = self.conv(x, f=128, k=(1, 1, 12), s=(1, 1, 12), a='lrelu', p='same') #(1, 96, 7, 128)
         x = self.conv(x, f=128, k=(1, 1, 7), s=(1, 1, 7), a='lrelu', p='same') #(1, 96, 1, 128)
         x = self.conv(x, f=128, k=(1, 2, 1), s=(1, 2, 1), a='lrelu', p='same') #(1, 48, 1, 128)
@@ -201,7 +200,7 @@ class MuseGAN():
 
         chords_input = Input(shape=(self.z_dim,), name='chords_input')
         style_input = Input(shape=(self.z_dim,), name='style_input')
-        melody_input = Input(shape=(self.n_tracks, self.z_dim), name='melody_input')
+        melody_input = Input(shape=(self.n_tracks, self.z_dim), name='melody_input') # 우리 모델에서 self.n_tracks는 항상 1
         groove_input = Input(shape=(self.n_tracks, self.z_dim), name='groove_input')
 
         # CHORDS -> TEMPORAL NETWORK
@@ -238,7 +237,7 @@ class MuseGAN():
 
                 track_output[track] = self.barGen[track](z_input)
 
-            bars_output[bar] = Concatenate(axis=-1)(track_output)
+            bars_output[bar] = track_output[0]
 
         generator_output = Concatenate(axis=1, name='concat_bars')(bars_output)
 
@@ -390,7 +389,7 @@ class MuseGAN():
 
             # If at save interval => save generated image samples
             if epoch % print_every_n_batches == 0:
-                r = 5
+                r = 2
 
                 chords_noise = np.random.normal(0, 1, (r, self.z_dim))
                 style_noise = np.random.normal(0, 1, (r, self.z_dim))
@@ -399,13 +398,9 @@ class MuseGAN():
                 gen_scores = self.generator.predict([chords_noise, style_noise, melody_noise, groove_noise])
 
                 self.notes_to_midi(run_folder, gen_scores, self.epoch)
-                self.notes_to_midi(run_folder, self.TrimScore(gen_scores, 32), '32th{}'.format(self.epoch))
                 self.notes_to_midi(run_folder, self.TrimScore(gen_scores, 16), '16th{}'.format(self.epoch))
-                self.notes_to_midi(run_folder, self.TrimScore(gen_scores, 8), '8th{}'.format(self.epoch))
-                self.notes_to_midi(run_folder, self.TrimScore(gen_scores, 4), '4th{}'.format(self.epoch))
 
                 self.generator.save_weights(os.path.join(run_folder, 'weights/weights-g.h5'))
-                
                 self.critic.save_weights(os.path.join(run_folder, 'weights/weights-c.h5'))
 
                 # with open(os.path.join(run_folder,"generator.json", "w") as json_file:
@@ -468,49 +463,6 @@ class MuseGAN():
         return output
 
     def notes_to_midi(self, run_folder, output, filename = None):
-        '''
-
-        for score_num in range(len(output)): # output 개수만큼 반복한다.
-
-            max_pitches = self.binarise_output(output) # 피치열에서 제일 큰 인덱스 출력
-
-            midi_note_score = max_pitches[score_num].reshape([self.n_bars * self.n_steps_per_bar, self.n_tracks])
-            # [2 * 16, 4]
-            parts = stream.Score() # Score 생성
-            parts.append(tempo.MetronomeMark(number= 66)) # 빠르기 설정
-
-            for i in range(self.n_tracks): # 트랙추갸
-                last_x = int(midi_note_score[:,i][0]) # i번째 트랙의 첫 번째 값을 가져온다.
-
-                s= stream.Part() # Part: 아마도 마디일듯
-                dur = 0
-
-
-                for idx, x in enumerate(midi_note_score[:, i]): # enumerate Tuple 형태로 반환 idx = index, x = value
-                    x = int(x) # x값 print로 확인
-
-                    if (x != last_x or idx % 4 == 0) and idx > 0: # (x간 last_x간 아니거나 idx 4번째 마다이면) 그리고 idx 두번째 이상이면
-                        n = note.Note(last_x) # note.Note의 기능 music21 문서에서 찾기
-                        n.duration = duration.Duration(dur) # duration 설정
-                        s.append(n) # 이전에 만든 Part에다 넣기
-                        dur = 0 # dur 초기화
-
-                    last_x = x  #
-                    dur = dur + 0.25
-
-                # 마지막 요소를 넣어줌
-                n = note.Note(last_x)
-                n.duration = duration.Duration(dur)
-                s.append(n)
-
-                parts.append(s) # 전체 악보에 추갸 하나의 트랙이 담길 듯함
-
-            if filename is None:
-                parts.write('midi', fp=os.path.join(run_folder, "samples/sample_{}_{}.midi".format(self.epoch, score_num)))
-            else:
-                parts.write('midi', fp=os.path.join(run_folder, "samples/{}.midi".format(filename)))
-        '''
-
         # 배치를 미디로 변환
 
         binarized = output > -0.5  # 1. 이진화
@@ -529,7 +481,7 @@ class MuseGAN():
             track = Track(score[..., j])#4.5.1. Track 생성(painorools[..., idx], program_nums, is_drums)
             multitrack.append_track(track)#4.5.2. Multitrack 에 추가한다.
         '''
-        track = Track(score[..., 1])
+        track = Track(score[..., 0])
         multitrack.append_track(track)
 
         if run_folder != None:
@@ -542,9 +494,6 @@ class MuseGAN():
         plot_model(self.critic, to_file=os.path.join(run_folder ,'viz/critic.png'), show_shapes = True, show_layer_names = True)
         plot_model(self.generator, to_file=os.path.join(run_folder ,'viz/generator.png'), show_shapes = True, show_layer_names = True)
 
-
-
-            
     def save(self, folder):
 
             with open(os.path.join(folder, 'params.pkl'), 'wb') as f:
