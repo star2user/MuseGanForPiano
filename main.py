@@ -42,24 +42,10 @@ gan = MuseGAN(input_dim = x_train.shape[1:]
         , n_pitches = n_pitches
         )
 
-gan.barGen[0].summary()
-gan.generator.summary()
-gan.critic.summary()
-
-EPOCHS = 1000
+EPOCHS = 2000
 PRINT_EVERY_N_BATCHES = 100
 
-'''
 gan.load_weights(RUN_FOLDER)
-gan.epoch = 2000;
-'''
-gan.train(
-    x_train
-    , batch_size = BATCH_SIZE
-    , epochs = EPOCHS
-    , run_folder = RUN_FOLDER
-    , print_every_n_batches = PRINT_EVERY_N_BATCHES
-)
 
 r = 2
 chords_noise = np.random.normal(0, 1, (r, z_dim))
@@ -68,10 +54,40 @@ melody_noise = np.random.normal(0, 1, (r, n_tracks, z_dim))
 groove_noise = np.random.normal(0, 1, (r, n_tracks, z_dim))
 score = gan.generator.predict([chords_noise, style_noise, melody_noise, groove_noise])
 
-gan.notes_to_midi(RUN_FOLDER, score, 'Originalsample')
 origninalScore = score
+gan.notes_to_midi(RUN_FOLDER, origninalScore, 'Original')
+gan.notes_to_midi(RUN_FOLDER, gan.TrimScore(origninalScore, 16), 'Hanon_2000train_1')
 
-score = gan.TrimScore(origninalScore, 16)
-gan.notes_to_midi(RUN_FOLDER, score, 'Trim16sample')
+r = 5
+chords_noise = np.random.normal(0, 1, (r, z_dim))
+style_noise = np.random.normal(0, 1, (r, z_dim))
+melody_noise = np.random.normal(0, 1, (r, n_tracks, z_dim))
+groove_noise = np.random.normal(0, 1, (r, n_tracks, z_dim))
+score = gan.generator.predict([chords_noise, style_noise, melody_noise, groove_noise])
+
+origninalScore = score
+gan.notes_to_midi(RUN_FOLDER, gan.TrimScore(origninalScore, 16), 'Hanon_2000train_2')
+
+chords_noise = chords_noise * 2
+style_noise = style_noise
+melody_noise = melody_noise
+groove_noise = groove_noise
+score = gan.generator.predict([chords_noise, style_noise, melody_noise, groove_noise])
+
+origninalScore = score
+gan.notes_to_midi(RUN_FOLDER, gan.TrimScore(origninalScore, 16), 'Hanon_2000train_3')
+#gan.epoch = 1000;
+
+'''
+gan.train(
+    x_train
+    , batch_size = BATCH_SIZE
+    , epochs = EPOCHS
+    , run_folder = RUN_FOLDER
+    , print_every_n_batches = PRINT_EVERY_N_BATCHES
+)
+'''
+
+
 
 

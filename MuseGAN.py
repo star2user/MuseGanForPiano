@@ -442,7 +442,7 @@ class MuseGAN():
         return max_pitches
 
     def TrimScore(self, score, leastNoteBeat):
-        # score: (batchSize, 2, 96, 84 2) 형태의 배열
+        # score: (batchSize, 4, 96, 84 1) 형태의 배열
         # leastNoteBeat : 악보에서 나올 수 있는 음표의 최소박자
         output = np.array(score)
 
@@ -522,7 +522,6 @@ class MuseGAN():
     def load_weights(self, run_folder, epoch=None):
 
         if epoch is None:
-
             self.generator.load_weights(os.path.join(run_folder, 'weights', 'weights-g.h5'))
             self.critic.load_weights(os.path.join(run_folder, 'weights', 'weights-c.h5'))
         else:
