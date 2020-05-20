@@ -17,13 +17,13 @@ if not os.path.exists(RUN_FOLDER):
     os.mkdir(os.path.join(RUN_FOLDER, 'samples'))
 #load data
 BATCH_SIZE = 32
-n_bars = 4
+n_bars = 2
 n_steps_per_bar = 96
 n_pitches = 84
 n_tracks = 1
 z_dim = 32
 
-x_train = np.load('Train4,4.npy')
+x_train = np.load('classic_training.npy')
 print(x_train.shape)
 x_train = x_train.reshape(-1, n_bars, n_steps_per_bar, n_pitches, n_tracks)
 print(x_train.shape)
@@ -43,7 +43,7 @@ gan = MuseGAN(input_dim = x_train.shape[1:]
         )
 
 
-EPOCHS = 4000
+EPOCHS = 6000
 PRINT_EVERY_N_BATCHES = 100
 
 gan.train(

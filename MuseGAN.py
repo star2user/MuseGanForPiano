@@ -389,7 +389,7 @@ class MuseGAN():
 
             # If at save interval => save generated image samples
             if epoch % print_every_n_batches == 0:
-                r = 2
+                r = 3
 
                 chords_noise = np.random.normal(0, 1, (r, self.z_dim))
                 style_noise = np.random.normal(0, 1, (r, self.z_dim))
