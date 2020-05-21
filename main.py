@@ -23,7 +23,7 @@ n_pitches = 84
 n_tracks = 1
 z_dim = 32
 
-x_train = np.load('classic_training.npy')
+x_train = np.load('trainingSet/classic_training.npy')
 print(x_train.shape)
 x_train = x_train.reshape(-1, n_bars, n_steps_per_bar, n_pitches, n_tracks)
 print(x_train.shape)
@@ -42,9 +42,11 @@ gan = MuseGAN(input_dim = x_train.shape[1:]
         , n_pitches = n_pitches
         )
 
+gan.load_weights(RUN_FOLDER)
 
-EPOCHS = 6000
+EPOCHS = 12000
 PRINT_EVERY_N_BATCHES = 100
+gan.epoch = 6000
 
 gan.train(
     x_train
@@ -55,3 +57,15 @@ gan.train(
 )
 
 
+'''
+r = 4
+
+chords_noise = np.random.normal(0, 1, (r, z_dim))
+style_noise = np.random.normal(0, 1, (r, z_dim))
+melody_noise = np.random.normal(0, 1, (r, n_tracks, z_dim))
+groove_noise = np.random.normal(0, 1, (r, n_tracks, z_dim))
+gen_scores = gan.generator.predict([chords_noise, style_noise, melody_noise, groove_noise])
+
+gan.notes_to_midi(RUN_FOLDER, gen_scores, 'classicTrainingOriginal')
+gan.notes_to_midi(RUN_FOLDER, gan.TrimScore(gen_scores, 16), '16th{}'.format('classicTraining'))
+'''
