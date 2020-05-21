@@ -389,7 +389,7 @@ class MuseGAN():
 
             # If at save interval => save generated image samples
             if epoch % print_every_n_batches == 0:
-                r = 3
+                r = 4
 
                 chords_noise = np.random.normal(0, 1, (r, self.z_dim))
                 style_noise = np.random.normal(0, 1, (r, self.z_dim))
@@ -420,7 +420,7 @@ class MuseGAN():
 
 
     def sample_images(self, run_folder):
-        r = 5
+        r = 4
 
         chords_noise = np.random.normal(0, 1, (r, self.z_dim))
         style_noise = np.random.normal(0, 1, (r, self.z_dim))
@@ -465,7 +465,7 @@ class MuseGAN():
     def notes_to_midi(self, run_folder, output, filename = None):
         # 배치를 미디로 변환
 
-        binarized = output > -0.5  # 1. 이진화
+        binarized = output > 0  # 1. 이진화
         # 1. reshpae (마디 부분합치기)
         score = binarized.reshape(-1, binarized.shape[1] * binarized.shape[2], binarized.shape[3], binarized.shape[4])  # 2. 마디 합치기
         # 2. pad설정
